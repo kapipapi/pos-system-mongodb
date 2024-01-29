@@ -1,0 +1,108 @@
+use dotenvy::dotenv;
+use mongodb::{Client, Database};
+use mongodb::bson::{doc, Uuid};
+use mongodb::options::{ClientOptions, Credential};
+use serde::de::DeserializeOwned;
+use serde::{Serialize};
+use crate::services::waiters::create_waiter_code_index;
+use futures::TryStreamExt;
+use crate::models::CollectionName;
+
+#[derive(Clone, Debug)]
+pub struct Repository {
+    database: Database,
+}
+
+impl Repository {
+    pub async fn connect() -> Self {
+        dotenv().expect(".env file not found");
+
+        let uri = dotenvy::var("URI").expect("URI must be set");
+        let username = dotenvy::var("DB_USERNAME").expect("DB_USERNAME must be set");
+        let password = dotenvy::var("DB_PASSWORD").expect("DB_PASSWORD must be set");
+        let db_name = dotenvy::var("DB_NAME").expect("DB_NAME must be set");
+
+        let mut client_options = ClientOptions::parse_async(uri).await.unwrap();
+        let default_cred = Credential::builder()
+            .username(username)
+            .password(password)
+            .source(db_name.clone())
+            .build();
+        client_options.credential = Some(default_cred);
+        let client = Client::with_options(client_options).unwrap();
+        let db = client.database(&*db_name);
+
+        create_waiter_code_index(&db).await;
+
+        Self {
+            database: db
+        }
+    }
+
+    pub fn get_collection<T>(&self) -> mongodb::Collection<T>
+        where
+            T: DeserializeOwned + Send + Sync + CollectionName,
+    {
+        self.database.collection::<T>(T::collection_name())
+    }
+
+    pub async fn insert_one<T>(&self, document: T) -> mongodb::error::Result<mongodb::results::InsertOneResult>
+        where
+            T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
+    {
+        self.get_collection::<T>().insert_one(document, None).await
+    }
+
+    pub async fn query_one<T>(&self, id: &Uuid) -> mongodb::error::Result<Option<T>>
+        where
+            T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
+    {
+        let bson_id = Uuid::parse_str(&id.to_string()).unwrap();
+
+        self.get_collection::<T>()
+            .find_one(Some(doc! {"_id": bson_id}), None)
+            .await
+    }
+
+    pub async fn query_many<T>(&self, ids: &Vec<Uuid>) -> mongodb::error::Result<Vec<T>>
+        where
+            T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
+    {
+        let bson_ids: Vec<Uuid> = ids.iter().map(|id| Uuid::parse_str(&id.to_string()).unwrap()).collect();
+
+        let cursor_result = self.get_collection::<T>()
+            .find(Some(doc! {"_id": {"$in": bson_ids}}), None)
+            .await;
+
+        match cursor_result {
+            Ok(mut cursor) => {
+                let mut results: Vec<T> = Vec::new();
+                while let Some(result) = cursor.try_next().await? {
+                    results.push(result)
+                }
+                Ok(results)
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub async fn query_all<T>(&self) -> mongodb::error::Result<Vec<T>>
+        where
+            T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
+    {
+        let cursor_result = self.get_collection::<T>()
+            .find(None, None)
+            .await;
+
+        match cursor_result {
+            Ok(mut cursor) => {
+                let mut results: Vec<T> = Vec::new();
+                while let Some(result) = cursor.try_next().await? {
+                    results.push(result)
+                }
+                Ok(results)
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+}
