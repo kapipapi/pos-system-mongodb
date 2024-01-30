@@ -18,7 +18,7 @@ impl Repository {
     pub async fn connect() -> Self {
         dotenv().expect(".env file not found");
 
-        let uri = dotenvy::var("URI").expect("URI must be set");
+        let uri = dotenvy::var("DB_URI").expect("DB_URI must be set");
         let username = dotenvy::var("DB_USERNAME").expect("DB_USERNAME must be set");
         let password = dotenvy::var("DB_PASSWORD").expect("DB_PASSWORD must be set");
         let db_name = dotenvy::var("DB_NAME").expect("DB_NAME must be set");

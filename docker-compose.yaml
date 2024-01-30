@@ -11,3 +11,32 @@ services:
     volumes:
       - ./data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
+  auth-db:
+    container_name: auth-db
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth
+    volumes:
+      - ./data-auth:/var/lib/postgresql/data
+
+  auth-system:
+    container_name: auth-system
+    image: bitnami/keycloak:latest
+    restart: always
+    environment:
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+
+      KEYCLOAK_DATABASE_HOST: auth-db
+      KEYCLOAK_DATABASE_PORT_NUMBER: 5432
+      KEYCLOAK_DATABASE_USER: postgres
+      KEYCLOAK_DATABASE_PASSWORD: password
+      KEYCLOAK_DATABASE_NAME: auth
+    depends_on:
+      - auth-db
+    ports:
+      - "8888:8080"
