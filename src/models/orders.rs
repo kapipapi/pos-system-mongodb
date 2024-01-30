@@ -1,7 +1,7 @@
 use mongodb::bson::{DateTime, Uuid};
 use serde::{Deserialize, Serialize};
 use crate::models::CollectionName;
-use crate::models::products::{ProductAPI, ProductId};
+use crate::models::products::{ProductAPI, ProductId, ProductIdQuantity};
 use crate::models::waiters::{WaiterAPI, WaiterId};
 
 const ORDERS_COLL_NAME: &str = "orders";
@@ -17,7 +17,7 @@ pub struct NewOrder {
 pub struct Order {
     pub _id: OrderId,
     pub waiter_id: WaiterId,
-    pub products: Vec<ProductId>,
+    pub products: Vec<ProductIdQuantity>,
     pub created_at: DateTime,
 }
 

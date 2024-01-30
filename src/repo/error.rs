@@ -6,11 +6,13 @@ pub enum RepoError {
     MongoDBError(mongodb::error::Error),
 
     DotenvError(String),
+    BsonSerializationError(mongodb::bson::ser::Error),
     DeserializeError(std::fmt::Error),
     CollectionNotFound,
 
     IdInvalidUuid,
     IdNotFound(Uuid),
+    IdsNotFound(Vec<Uuid>),
 }
 
 impl From<mongodb::error::Error> for RepoError {
@@ -28,6 +30,8 @@ impl Display for RepoError {
             RepoError::CollectionNotFound => write!(f, "Collection not found"),
             RepoError::IdInvalidUuid => write!(f, "Invalid UUID id"),
             RepoError::IdNotFound(id) => write!(f, "Id not found: {}", id),
+            RepoError::IdsNotFound(ids) => write!(f, "Ids not found: {:?}", ids),
+            RepoError::BsonSerializationError(error) => write!(f, "BSON serialization error: {}", error),
         }
     }
 }

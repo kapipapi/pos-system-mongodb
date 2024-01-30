@@ -48,6 +48,8 @@ impl From<RepoError> for ServiceError {
             RepoError::CollectionNotFound => ServiceError::InternalError("Collection not found".to_string()),
             RepoError::IdInvalidUuid => ServiceError::InternalError("Invalid UUID id".to_string()),
             RepoError::IdNotFound(id) => ServiceError::NotFound(format!("Id not found: {}", id)),
+            RepoError::BsonSerializationError(err) => ServiceError::InternalError(err.to_string()),
+            RepoError::IdsNotFound(ids) => ServiceError::NotFound(format!("Ids not found: {:?}", ids)),
         }
     }
 }

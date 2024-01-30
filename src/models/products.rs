@@ -35,5 +35,11 @@ pub struct ProductAPI {
     pub _id: ProductId,
     pub name: String,
     pub price: f64,
-    pub quantity: u32,
+    pub quantity: i32,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct ProductIdQuantity {
+    pub _id: ProductId,
+    pub quantity: i32,
 }

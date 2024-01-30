@@ -85,7 +85,12 @@ impl Repository {
         while let Some(result) = cursor.try_next().await? {
             results.push(result)
         }
-        Ok(results)
+
+        if results.len() == ids.len() {
+            Ok(results)
+        } else {
+            Err(RepoError::IdsNotFound(ids.clone()))
+        }
     }
 
     pub async fn query_all<T>(&self) -> Result<Vec<T>, RepoError>

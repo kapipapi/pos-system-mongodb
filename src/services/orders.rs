@@ -1,6 +1,6 @@
 use actix_web::{get, HttpResponse, post, web};
 use mongodb::{bson};
-use mongodb::bson::{doc};
+use mongodb::bson::{doc, Uuid};
 use crate::models::orders::{NewOrder, Order, OrderId};
 use crate::models::products::{AddProductQuery};
 use crate::models::waiters::WaiterId;
@@ -37,19 +37,22 @@ pub(crate) async fn get_order(repo: web::Data<Repository>, id: web::Path<String>
     Ok(HttpResponse::Ok().json(result))
 }
 
-#[post("/orders/{id}/products")]
+#[post("/orders/{id}/add-product")]
 pub(crate) async fn add_product_to_order(repo: web::Data<Repository>, id: web::Path<String>, data: web::Json<AddProductQuery>) -> Result<HttpResponse, ServiceError> {
     let id = OrderId::parse_str(&id.into_inner()).unwrap();
     let add_product_query = data.into_inner();
 
-    let collection = repo.get_collection::<Order>();
-    collection.find_one_and_update(
-        doc! { "_id": id },
-        doc! { "$push": { "products": add_product_query.product_id } },
-        None,
-    ).await.map_err(|err| ServiceError::InternalError(err.to_string()))?;
+    let result = repo.order_add_product(&id, &add_product_query.product_id).await?;
 
-    let result = repo.query_order_api(&id).await?;
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[post("/orders/{id}/remove-product")]
+pub(crate) async fn remove_product_from_order(repo: web::Data<Repository>, id: web::Path<String>, data: web::Json<AddProductQuery>) -> Result<HttpResponse, ServiceError> {
+    let id = OrderId::parse_str(&id.into_inner()).unwrap();
+    let add_product_query = data.into_inner();
+
+    let result = repo.order_remove_product(&id, &add_product_query.product_id).await?;
 
     Ok(HttpResponse::Ok().json(result))
 }
