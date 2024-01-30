@@ -1,12 +1,28 @@
 use std::collections::HashMap;
 use std::hash::Hash;
+use futures::TryStreamExt;
+use mongodb::bson::doc;
 use crate::models::orders::{Order, OrderAPI, OrderId};
 use crate::models::products::{Product, ProductAPI};
-use crate::models::waiters::WaiterAPI;
+use crate::models::waiters::{WaiterAPI, WaiterId};
 use crate::repo::error::RepoError;
 use crate::repo::repository::Repository;
 
 impl Repository {
+    pub async fn query_all_orders_api(&self) -> Result<Vec<OrderAPI>, RepoError> {
+        let mut cursor = self.get_collection::<Order>().find(
+            None,
+            None,
+        ).await?;
+
+        let mut results: Vec<OrderAPI> = Vec::new();
+        while let Some(result) = cursor.try_next().await? {
+            results.push(self.query_order_api(&result._id).await?);
+        }
+
+        Ok(results)
+    }
+
     pub async fn query_order_api(&self, id: &OrderId) -> Result<OrderAPI, RepoError> {
         let order = self.query_one::<Order>(&id).await?;
 
@@ -36,6 +52,21 @@ impl Repository {
                 created_at: order.created_at,
             }
         )
+    }
+
+    pub async fn query_orders_by_waiter(&self, id: &WaiterId) -> Result<Vec<OrderAPI>, RepoError> {
+        let mut cursor = self.get_collection::<Order>().find(
+            Some(doc! { "waiter_id": id }),
+            None,
+        ).await?;
+
+
+        let mut results: Vec<OrderAPI> = Vec::new();
+        while let Some(result) = cursor.try_next().await? {
+            results.push(self.query_order_api(&result._id).await?);
+        }
+
+        Ok(results)
     }
 }
 

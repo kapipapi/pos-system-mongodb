@@ -1,3 +1,3 @@
 pub mod repository;
-pub mod products;
+pub mod orders;
 pub mod error;

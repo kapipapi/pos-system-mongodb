@@ -6,7 +6,7 @@ mod repo;
 
 use actix_web::{web, App, HttpServer};
 use crate::repo::repository::Repository;
-use crate::services::orders::{add_order, add_product_to_order, get_all_orders, get_order};
+use crate::services::orders::{add_order, add_product_to_order, get_all_orders, get_order, get_orders_by_waiter};
 use crate::services::products::{add_product, get_all_products, get_product};
 use crate::services::waiters::{add_waiter, get_all_waiters, get_waiter};
 
@@ -23,6 +23,7 @@ async fn main() -> std::io::Result<()> {
             .service(add_order)
             .service(get_order)
             .service(get_all_orders)
+            .service(get_orders_by_waiter)
             .service(add_product_to_order)
             .service(add_product)
             .service(get_product)

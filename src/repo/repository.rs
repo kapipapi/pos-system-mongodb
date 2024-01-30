@@ -77,39 +77,29 @@ impl Repository {
     {
         let bson_ids: Vec<Uuid> = ids.iter().map(|id| Uuid::parse_str(&id.to_string()).unwrap()).collect();
 
-        let cursor_result = self.get_collection::<T>()
+        let mut cursor = self.get_collection::<T>()
             .find(Some(doc! {"_id": {"$in": bson_ids}}), None)
-            .await;
+            .await?;
 
-        match cursor_result {
-            Ok(mut cursor) => {
-                let mut results: Vec<T> = Vec::new();
-                while let Some(result) = cursor.try_next().await? {
-                    results.push(result)
-                }
-                Ok(results)
-            }
-            Err(e) => Err(RepoError::MongoDBError(e)),
+        let mut results: Vec<T> = Vec::new();
+        while let Some(result) = cursor.try_next().await? {
+            results.push(result)
         }
+        Ok(results)
     }
 
     pub async fn query_all<T>(&self) -> Result<Vec<T>, RepoError>
         where
             T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
     {
-        let cursor_result = self.get_collection::<T>()
+        let mut cursor = self.get_collection::<T>()
             .find(None, None)
-            .await;
+            .await?;
 
-        match cursor_result {
-            Ok(mut cursor) => {
-                let mut results: Vec<T> = Vec::new();
-                while let Some(result) = cursor.try_next().await? {
-                    results.push(result)
-                }
-                Ok(results)
-            }
-            Err(e) => Err(RepoError::MongoDBError(e)),
+        let mut results: Vec<T> = Vec::new();
+        while let Some(result) = cursor.try_next().await? {
+            results.push(result)
         }
+        Ok(results)
     }
 }
