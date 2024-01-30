@@ -7,6 +7,7 @@ use serde::{Serialize};
 use crate::services::waiters::create_waiter_code_index;
 use futures::TryStreamExt;
 use crate::models::CollectionName;
+use crate::repo::error::RepoError;
 
 #[derive(Clone, Debug)]
 pub struct Repository {
@@ -46,25 +47,31 @@ impl Repository {
         self.database.collection::<T>(T::collection_name())
     }
 
-    pub async fn insert_one<T>(&self, document: T) -> mongodb::error::Result<mongodb::results::InsertOneResult>
+    pub async fn insert_one<T>(&self, document: T) -> Result<(), RepoError>
         where
             T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
     {
-        self.get_collection::<T>().insert_one(document, None).await
+        match self.get_collection::<T>().insert_one(document, None).await {
+            Ok(_) => Ok(()),
+            Err(err) => Err(RepoError::MongoDBError(err)),
+        }
     }
 
-    pub async fn query_one<T>(&self, id: &Uuid) -> mongodb::error::Result<Option<T>>
+    pub async fn query_one<T>(&self, id: &Uuid) -> Result<T, RepoError>
         where
             T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
     {
         let bson_id = Uuid::parse_str(&id.to_string()).unwrap();
 
-        self.get_collection::<T>()
+        match self.get_collection::<T>()
             .find_one(Some(doc! {"_id": bson_id}), None)
-            .await
+            .await? {
+            Some(result) => Ok(result),
+            None => Err(RepoError::IdNotFound(id.clone())),
+        }
     }
 
-    pub async fn query_many<T>(&self, ids: &Vec<Uuid>) -> mongodb::error::Result<Vec<T>>
+    pub async fn query_many<T>(&self, ids: &Vec<Uuid>) -> Result<Vec<T>, RepoError>
         where
             T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
     {
@@ -82,11 +89,11 @@ impl Repository {
                 }
                 Ok(results)
             }
-            Err(e) => Err(e.into()),
+            Err(e) => Err(RepoError::MongoDBError(e)),
         }
     }
 
-    pub async fn query_all<T>(&self) -> mongodb::error::Result<Vec<T>>
+    pub async fn query_all<T>(&self) -> Result<Vec<T>, RepoError>
         where
             T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
     {
@@ -102,7 +109,7 @@ impl Repository {
                 }
                 Ok(results)
             }
-            Err(e) => Err(e.into()),
+            Err(e) => Err(RepoError::MongoDBError(e)),
         }
     }
 }

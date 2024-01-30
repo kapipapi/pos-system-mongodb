@@ -1,16 +1,33 @@
+use std::fmt::Display;
+use mongodb::bson::Uuid;
+
 #[derive(Debug)]
 pub enum RepoError {
-    NotFound(String),
-    InternalServerError(String),
+    MongoDBError(mongodb::error::Error),
+
+    DotenvError(String),
+    DeserializeError(std::fmt::Error),
+    CollectionNotFound,
+
+    IdInvalidUuid,
+    IdNotFound(Uuid),
 }
 
-impl std::fmt::Display for RepoError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            RepoError::NotFound(str) => write!(f, "Not Found Error: {str}"),
-            RepoError::InternalServerError(str) => write!(f, "Internal Server Error: {str}"),
-        }
+impl From<mongodb::error::Error> for RepoError {
+    fn from(error: mongodb::error::Error) -> Self {
+        RepoError::MongoDBError(error)
     }
 }
 
-impl std::error::Error for RepoError {}
+impl Display for RepoError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RepoError::MongoDBError(ref error) => write!(f, "MongoDB Error: {}", error),
+            RepoError::DotenvError(error_msg) => write!(f, "Error loading environment variables: {}", error_msg),
+            RepoError::DeserializeError(error) => write!(f, "JSON deserialization error: {}", error),
+            RepoError::CollectionNotFound => write!(f, "Collection not found"),
+            RepoError::IdInvalidUuid => write!(f, "Invalid UUID id"),
+            RepoError::IdNotFound(id) => write!(f, "Id not found: {}", id),
+        }
+    }
+}

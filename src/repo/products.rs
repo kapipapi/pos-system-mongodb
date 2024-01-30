@@ -8,23 +8,12 @@ use crate::repo::repository::Repository;
 
 impl Repository {
     pub async fn query_order_api(&self, id: &OrderId) -> Result<OrderAPI, RepoError> {
-        let result = self.query_one::<Order>(&id).await;
-        let order = match result {
-            Ok(Some(order)) => order,
-            Ok(None) => return Err(RepoError::NotFound(format!("with id: {id}"))),
-            Err(err) => return Err(RepoError::InternalServerError(err.to_string())),
-        };
+        let order = self.query_one::<Order>(&id).await?;
 
-        let waiter = self.query_one::<WaiterAPI>(&order.waiter_id).await;
-        let waiter = match waiter {
-            Ok(Some(waiter)) => waiter,
-            Ok(None) => return Err(RepoError::NotFound(format!("with id: {id}"))),
-            Err(err) => return Err(RepoError::InternalServerError(err.to_string())),
-        };
+        let waiter = self.query_one::<WaiterAPI>(&order.waiter_id).await?;
 
         let products_frequency = count_frequency(order.products.clone());
-        let products = self.query_many::<Product>(&order.products).await
-            .map_err(|err| RepoError::InternalServerError(err.to_string()))?;
+        let products = self.query_many::<Product>(&order.products).await?;
 
         let mut sum: f64 = 0.0;
         let products = products.iter().map(|product| {

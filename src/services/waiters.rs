@@ -4,42 +4,39 @@ use mongodb::bson::{doc};
 use mongodb::options::IndexOptions;
 use crate::models::waiters::{NewWaiter, Waiter, WaiterId};
 use crate::repo::repository::Repository;
+use crate::services::error::ServiceError;
 
 #[get("/waiters")]
-pub(crate) async fn get_all_waiters(repo: web::Data<Repository>) -> HttpResponse {
-    let result = repo.query_all::<Waiter>().await;
-    match result {
-        Ok(waiters) => HttpResponse::Ok().json(waiters),
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
-    }
+pub(crate) async fn get_all_waiters(repo: web::Data<Repository>) -> Result<HttpResponse, ServiceError> {
+    let result = repo.query_all::<Waiter>().await?;
+
+    Ok(HttpResponse::Ok().json(result))
 }
 
 #[post("/waiters")]
-pub(crate) async fn add_waiter(repo: web::Data<Repository>, data: web::Json<NewWaiter>) -> HttpResponse {
+pub(crate) async fn add_waiter(repo: web::Data<Repository>, data: web::Json<NewWaiter>) -> Result<HttpResponse, ServiceError> {
     let new_waiter = Waiter {
         _id: WaiterId::new(),
         name: data.name.clone(),
         code: data.code.clone(),
     };
 
-    let result = repo.insert_one::<Waiter>(new_waiter.clone()).await;
-    match result {
-        Ok(_) => HttpResponse::Ok().json(new_waiter),
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
-    }
+    repo.insert_one::<Waiter>(new_waiter.clone()).await?;
+
+    Ok(HttpResponse::Ok().json(new_waiter))
 }
 
 #[get("/waiters/{code}")]
-pub(crate) async fn get_waiter(repo: web::Data<Repository>, code: web::Path<String>) -> HttpResponse {
+pub(crate) async fn get_waiter(repo: web::Data<Repository>, code: web::Path<String>) -> Result<HttpResponse, ServiceError> {
     let code = code.into_inner();
 
     let result = repo
         .get_collection::<Waiter>()
         .find_one(doc! { "code": &code }, None).await;
     match result {
-        Ok(Some(waiter)) => HttpResponse::Ok().json(waiter),
-        Ok(None) => HttpResponse::NotFound().body(format!("No waiter found with code: {code}")),
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+        Ok(Some(waiter)) => Ok(HttpResponse::Ok().json(waiter)),
+        Ok(None) => Err(ServiceError::NotFound(format!("Waiter with code {} not found", code))),
+        Err(err) => Err(ServiceError::InternalError(err.to_string())),
     }
 }
 
