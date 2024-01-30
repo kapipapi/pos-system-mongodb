@@ -4,6 +4,7 @@ use futures::TryStreamExt;
 use mongodb::bson::{to_bson, doc, Uuid};
 use crate::models::orders::{Order, OrderAPI, OrderId};
 use crate::models::products::{Product, ProductAPI, ProductId, ProductIdQuantity};
+use crate::models::tables::TableAPI;
 use crate::models::waiters::{WaiterAPI, WaiterId};
 use crate::repo::error::RepoError;
 use crate::repo::repository::Repository;
@@ -27,6 +28,7 @@ impl Repository {
         let order = self.query_one::<Order>(&id).await?;
 
         let waiter = self.query_one::<WaiterAPI>(&order.waiter_id).await?;
+        let table = self.query_one::<TableAPI>(&order.table_id).await?;
 
         let products_ids = order.products.iter().map(|product| product._id as Uuid).collect::<Vec<Uuid>>();
 
@@ -51,6 +53,7 @@ impl Repository {
             OrderAPI {
                 _id: order._id,
                 waiter,
+                table,
                 products,
                 sum,
                 created_at: order.created_at,

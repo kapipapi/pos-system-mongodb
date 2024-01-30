@@ -19,6 +19,7 @@ pub(crate) async fn add_order(repo: web::Data<Repository>, data: web::Json<NewOr
     let new_order = Order {
         _id: OrderId::new(),
         waiter_id: data.waiter_id,
+        table_id: data.table_id,
         products: vec![],
         created_at: bson::DateTime::now(),
     };
