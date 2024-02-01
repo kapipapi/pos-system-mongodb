@@ -3,6 +3,7 @@ use mongodb::{bson};
 use mongodb::bson::{doc, Uuid};
 use crate::models::orders::{NewOrder, Order, OrderId};
 use crate::models::products::{AddProductQuery};
+use crate::models::tables::TableId;
 use crate::models::waiters::WaiterId;
 use crate::repo::repository::Repository;
 use crate::services::error::ServiceError;
@@ -63,6 +64,15 @@ pub(crate) async fn get_orders_by_waiter(repo: web::Data<Repository>, id: web::P
     let id = WaiterId::parse_str(&id.into_inner()).unwrap();
 
     let result = repo.query_orders_by_waiter(&id).await?;
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[get("/orders/table/{id}")]
+pub(crate) async fn get_orders_by_table(repo: web::Data<Repository>, id: web::Path<String>) -> Result<HttpResponse, ServiceError> {
+    let id = TableId::parse_str(&id.into_inner()).unwrap();
+
+    let result = repo.query_orders_by_table(&id).await?;
 
     Ok(HttpResponse::Ok().json(result))
 }

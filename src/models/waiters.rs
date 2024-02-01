@@ -26,12 +26,12 @@ impl CollectionName for Waiter {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct WaiterAPI {
+pub struct WaiterInOrder {
     pub _id: WaiterId,
     pub name: String,
 }
 
-impl CollectionName for WaiterAPI {
+impl CollectionName for WaiterInOrder {
     fn collection_name() -> &'static str {
         WAITERS_COLL_NAME
     }

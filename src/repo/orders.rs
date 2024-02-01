@@ -4,8 +4,8 @@ use futures::TryStreamExt;
 use mongodb::bson::{to_bson, doc, Uuid};
 use crate::models::orders::{Order, OrderAPI, OrderId};
 use crate::models::products::{Product, ProductAPI, ProductId, ProductIdQuantity};
-use crate::models::tables::TableAPI;
-use crate::models::waiters::{WaiterAPI, WaiterId};
+use crate::models::tables::{TableId, TableInOrder};
+use crate::models::waiters::{WaiterInOrder, WaiterId};
 use crate::repo::error::RepoError;
 use crate::repo::repository::Repository;
 
@@ -27,8 +27,8 @@ impl Repository {
     pub async fn query_order_api(&self, id: &OrderId) -> Result<OrderAPI, RepoError> {
         let order = self.query_one::<Order>(&id).await?;
 
-        let waiter = self.query_one::<WaiterAPI>(&order.waiter_id).await?;
-        let table = self.query_one::<TableAPI>(&order.table_id).await?;
+        let waiter = self.query_one::<WaiterInOrder>(&order.waiter_id).await?;
+        let table = self.query_one::<TableInOrder>(&order.table_id).await?;
 
         let products_ids = order.products.iter().map(|product| product._id as Uuid).collect::<Vec<Uuid>>();
 
@@ -67,6 +67,20 @@ impl Repository {
             None,
         ).await?;
 
+
+        let mut results: Vec<OrderAPI> = Vec::new();
+        while let Some(result) = cursor.try_next().await? {
+            results.push(self.query_order_api(&result._id).await?);
+        }
+
+        Ok(results)
+    }
+
+    pub async fn query_orders_by_table(&self, id: &TableId) -> Result<Vec<OrderAPI>, RepoError> {
+        let mut cursor = self.get_collection::<Order>().find(
+            Some(doc! { "table_id": id }),
+            None,
+        ).await?;
 
         let mut results: Vec<OrderAPI> = Vec::new();
         while let Some(result) = cursor.try_next().await? {

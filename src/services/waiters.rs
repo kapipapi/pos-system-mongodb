@@ -2,13 +2,13 @@ use actix_web::{get, post, web, HttpResponse};
 use mongodb::{Database, IndexModel};
 use mongodb::bson::{doc};
 use mongodb::options::IndexOptions;
-use crate::models::waiters::{NewWaiter, Waiter, WaiterAPI, WaiterId};
+use crate::models::waiters::{NewWaiter, Waiter, WaiterInOrder, WaiterId};
 use crate::repo::repository::Repository;
 use crate::services::error::ServiceError;
 
 #[get("/waiters")]
 pub(crate) async fn get_all_waiters(repo: web::Data<Repository>) -> Result<HttpResponse, ServiceError> {
-    let result = repo.query_all::<WaiterAPI>().await?;
+    let result = repo.query_all::<WaiterInOrder>().await?;
 
     Ok(HttpResponse::Ok().json(result))
 }

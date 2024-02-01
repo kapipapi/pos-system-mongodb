@@ -62,8 +62,6 @@ pub async fn validate_token(token: &str) -> Result<bool, Box<dyn Error>> {
 }
 
 pub async fn validator(req: ServiceRequest, credentials: BearerAuth) -> Result<ServiceRequest, (ActixError, ServiceRequest)> {
-    println!("Validating token: {:?}", credentials.token());
-
     let config = req
         .app_data::<Config>()
         .map(|data| Pin::new(data).get_ref().clone())
@@ -74,12 +72,10 @@ pub async fn validator(req: ServiceRequest, credentials: BearerAuth) -> Result<S
             if res {
                 Ok(req)
             } else {
-                println!("Token validation failed");
                 Err((AuthenticationError::from(config).into(), req))
             }
         }
         Err(err) => {
-            println!("Error in token validation: {err:?}");
             Err((AuthenticationError::from(config).into(), req))
         }
     }

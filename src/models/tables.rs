@@ -30,12 +30,12 @@ impl CollectionName for Table {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct TableAPI {
+pub struct TableInOrder {
     pub _id: TableId,
     pub name: String,
 }
 
-impl CollectionName for TableAPI {
+impl CollectionName for TableInOrder {
     fn collection_name() -> &'static str {
         TABLES_COLL_NAME
     }

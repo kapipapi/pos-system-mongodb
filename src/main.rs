@@ -5,12 +5,12 @@ mod services;
 mod repo;
 
 use actix_cors::Cors;
-use actix_web::{web, App, HttpServer, middleware};
-use actix_web::http::header;
+use actix_web::{web, App, HttpServer};
+use actix_web::middleware::Logger;
 use actix_web_httpauth::middleware::HttpAuthentication;
 use crate::repo::repository::Repository;
 use crate::services::auth::validator;
-use crate::services::orders::{add_order, add_product_to_order, get_all_orders, get_order, get_orders_by_waiter, remove_product_from_order};
+use crate::services::orders::{add_order, add_product_to_order, get_all_orders, get_order, get_orders_by_table, get_orders_by_waiter, remove_product_from_order};
 use crate::services::products::{add_product, get_all_products, get_product};
 use crate::services::tables::{add_table, get_all_tables, get_table};
 use crate::services::waiters::{add_waiter, get_all_waiters, get_waiter};
@@ -23,14 +23,15 @@ async fn main() -> std::io::Result<()> {
         let auth = HttpAuthentication::bearer(validator);
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")
+            .allow_any_method()
+            .allow_any_header()
             .max_age(3600);
-        let logger = middleware::Logger::default();
 
         App::new()
+            .wrap(Logger::default())
             .wrap(auth)
             .wrap(cors)
             .app_data(web::Data::new(repo.clone()))
-            .wrap(logger)
             .service(add_waiter)
             .service(get_waiter)
             .service(get_all_waiters)
@@ -38,6 +39,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_order)
             .service(get_all_orders)
             .service(get_orders_by_waiter)
+            .service(get_orders_by_table)
             .service(add_product_to_order)
             .service(remove_product_from_order)
             .service(add_product)
