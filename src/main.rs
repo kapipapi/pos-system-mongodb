@@ -10,6 +10,7 @@ use actix_web::middleware::Logger;
 use actix_web_httpauth::middleware::HttpAuthentication;
 use crate::repo::repository::Repository;
 use crate::services::auth::validator;
+use crate::services::categories::{add_category, get_all_categories, get_category};
 use crate::services::orders::{add_order, add_product_to_order, check_empty_order, get_all_orders, get_order, get_orders_by_table, get_orders_by_waiter, remove_product_from_order};
 use crate::services::products::{add_product, get_all_products, get_product};
 use crate::services::tables::{add_table, get_all_tables, get_table};
@@ -40,15 +41,18 @@ async fn main() -> std::io::Result<()> {
             .service(get_all_orders)
             .service(get_orders_by_waiter)
             .service(get_orders_by_table)
-            .service(check_empty_order)
             .service(add_product_to_order)
             .service(remove_product_from_order)
+            .service(check_empty_order)
             .service(add_product)
             .service(get_product)
             .service(get_all_products)
             .service(get_all_tables)
             .service(get_table)
             .service(add_table)
+            .service(get_all_categories)
+            .service(add_category)
+            .service(get_category)
     })
         .bind(("localhost", 8080))?
         .run()

@@ -2,8 +2,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use futures::TryStreamExt;
 use mongodb::bson::{to_bson, doc, Uuid};
+use crate::models::categories::{Category, CategoryId};
 use crate::models::orders::{Order, OrderAPI, OrderId};
-use crate::models::products::{Product, ProductAPI, ProductId, ProductIdQuantity};
+use crate::models::products::{Product, ProductInOrder, ProductId, ProductIdWithQuantity};
 use crate::models::tables::{TableId, TableInOrder};
 use crate::models::waiters::{WaiterInOrder, WaiterId};
 use crate::repo::error::RepoError;
@@ -29,6 +30,7 @@ impl Repository {
 
         let waiter = self.query_one::<WaiterInOrder>(&order.waiter_id).await?;
         let table = self.query_one::<TableInOrder>(&order.table_id).await?;
+        let categories = self.query_all::<Category>().await?;
 
         let products_ids = order.products.iter().map(|product| product._id as Uuid).collect::<Vec<Uuid>>();
 
@@ -38,16 +40,18 @@ impl Repository {
             .into_iter()
             .map(|product| {
                 let quantity = order.products.iter().find(|p| p._id == product._id).unwrap().quantity;
-                ProductAPI {
+                let category = categories.iter().find(|c| c._id == product.category_id).unwrap();
+                ProductInOrder {
                     _id: product._id,
                     name: product.name.clone(),
                     price: product.price,
+                    category: category.clone(),
                     quantity,
                 }
             })
-            .collect::<Vec<ProductAPI>>();
+            .collect::<Vec<ProductInOrder>>();
 
-        let sum = products.iter().fold(0.0, |acc, product| acc + product.price * product.quantity as f64);
+        let sum = products.iter().fold(0.0, |acc, product| acc + product.price * product.quantity);
 
         Ok(
             OrderAPI {
@@ -114,9 +118,9 @@ impl Repository {
         } else {
             log::info!("Product does not exist in order, adding it");
 
-            let product = ProductIdQuantity {
+            let product = ProductIdWithQuantity {
                 _id: *product_id,
-                quantity: 1,
+                quantity: 1.0,
             };
 
             let product_bson = to_bson(&product).map_err(|err| RepoError::BsonSerializationError(err))?;

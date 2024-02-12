@@ -1,7 +1,7 @@
 use mongodb::bson::{DateTime, Uuid};
 use serde::{Deserialize, Serialize};
 use crate::models::CollectionName;
-use crate::models::products::{ProductAPI, ProductId, ProductIdQuantity};
+use crate::models::products::{ProductInOrder, ProductId, ProductIdWithQuantity};
 use crate::models::tables::{TableInOrder, TableId};
 use crate::models::waiters::{WaiterInOrder, WaiterId};
 
@@ -20,7 +20,7 @@ pub struct Order {
     pub _id: OrderId,
     pub waiter_id: WaiterId,
     pub table_id: TableId,
-    pub products: Vec<ProductIdQuantity>,
+    pub products: Vec<ProductIdWithQuantity>,
     pub created_at: DateTime,
 }
 
@@ -35,7 +35,7 @@ pub struct OrderAPI {
     pub _id: OrderId,
     pub waiter: WaiterInOrder,
     pub table: TableInOrder,
-    pub products: Vec<ProductAPI>,
+    pub products: Vec<ProductInOrder>,
     pub sum: f64,
     pub created_at: DateTime,
 }

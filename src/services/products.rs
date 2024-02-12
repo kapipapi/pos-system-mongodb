@@ -1,13 +1,26 @@
 use actix_web::{get, HttpResponse, post, web};
 use mongodb::bson::{doc};
-use crate::models::products::{NewProduct, Product, ProductId};
+use crate::models::categories::Category;
+use crate::models::products::{NewProduct, Product, ProductAPI, ProductId};
 use crate::repo::repository::Repository;
 use crate::services::error::ServiceError;
 
 #[get("/products")]
 pub(crate) async fn get_all_products(repo: web::Data<Repository>) -> Result<HttpResponse, ServiceError> {
-    let result = repo.query_all::<Product>().await?;
-    Ok(HttpResponse::Ok().json(result))
+    let products = repo.query_all::<Product>().await?;
+    let categories = repo.query_all::<Category>().await?;
+
+    let results = products.into_iter().map(|product| {
+        let category = categories.iter().find(|c| c._id == product.category_id).unwrap();
+        ProductAPI {
+            _id: product._id,
+            name: product.name,
+            price: product.price,
+            category: category.clone(),
+        }
+    }).collect::<Vec<ProductAPI>>();
+
+    Ok(HttpResponse::Ok().json(results))
 }
 
 #[post("/products")]
@@ -18,6 +31,7 @@ pub(crate) async fn add_product(repo: web::Data<Repository>, data: web::Json<New
         _id: ProductId::new(),
         name: data.name,
         price: data.price,
+        category_id: data.category_id,
     };
 
     repo.insert_one::<Product>(new_product.clone()).await.map_err(|err| ServiceError::InternalError(err.to_string()))?;
