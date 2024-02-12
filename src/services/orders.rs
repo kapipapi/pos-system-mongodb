@@ -1,4 +1,4 @@
-use actix_web::{get, HttpResponse, post, web};
+use actix_web::{delete, get, HttpResponse, post, web};
 use mongodb::{bson};
 use mongodb::bson::{doc, Uuid};
 use crate::models::orders::{NewOrder, Order, OrderId};
@@ -75,4 +75,19 @@ pub(crate) async fn get_orders_by_table(repo: web::Data<Repository>, id: web::Pa
     let result = repo.query_orders_by_table(&id).await?;
 
     Ok(HttpResponse::Ok().json(result))
+}
+
+#[get("/orders/{id}/check-empty")]
+pub(crate) async fn check_empty_order(repo: web::Data<Repository>, id: web::Path<String>) -> Result<HttpResponse, ServiceError> {
+    let id = TableId::parse_str(&id.into_inner()).unwrap();
+
+    let result = repo.query_order_api(&id).await?;
+
+    if result.products.len() > 0 {
+        return Ok(HttpResponse::Ok().json(false));
+    }
+
+    repo.delete_one::<Order>(&id).await?;
+
+    Ok(HttpResponse::Ok().json(true))
 }

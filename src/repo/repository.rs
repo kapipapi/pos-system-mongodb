@@ -107,4 +107,18 @@ impl Repository {
         }
         Ok(results)
     }
+
+    pub async fn delete_one<T>(&self, id: &Uuid) -> Result<(), RepoError>
+        where
+            T: Serialize + DeserializeOwned + Unpin + Send + Sync + CollectionName,
+    {
+        let bson_id = Uuid::parse_str(&id.to_string()).unwrap();
+
+        match self.get_collection::<T>()
+            .delete_one(doc! {"_id": bson_id}, None)
+            .await {
+            Ok(_) => Ok(()),
+            Err(err) => Err(RepoError::MongoDBError(err)),
+        }
+    }
 }
