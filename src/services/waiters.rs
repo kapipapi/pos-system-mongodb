@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{get, post, web, HttpResponse, delete};
 use mongodb::{Database, IndexModel};
 use mongodb::bson::{doc};
 use mongodb::options::IndexOptions;
@@ -51,4 +51,16 @@ pub(crate) async fn create_waiter_code_index(database: &Database) {
         .create_index(model, None)
         .await
         .expect("creating an index should succeed");
+}
+
+
+#[delete("/waiters/{id}")]
+pub(crate) async fn delete_waiter(repo: web::Data<Repository>, id: web::Path<String>) -> Result<HttpResponse, ServiceError> {
+    let id = WaiterId::parse_str(&id.into_inner()).unwrap();
+
+    let result = repo.delete_one::<Waiter>(&id).await;
+    match result {
+        Ok(_) => Ok(HttpResponse::Ok().json(true)),
+        Err(err) => Err(ServiceError::InternalError(err.to_string())),
+    }
 }

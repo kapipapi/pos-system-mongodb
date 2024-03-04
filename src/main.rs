@@ -14,7 +14,7 @@ use crate::services::categories::{add_category, get_all_categories, get_category
 use crate::services::orders::{add_order, add_product_to_order, check_empty_order, get_all_orders, get_order, get_orders_by_table, get_orders_by_waiter, remove_product_from_order};
 use crate::services::products::{add_product, get_all_products, get_product};
 use crate::services::tables::{add_table, get_all_tables, get_table};
-use crate::services::waiters::{add_waiter, get_all_waiters, get_waiter};
+use crate::services::waiters::{add_waiter, delete_waiter, get_all_waiters, get_waiter};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -36,6 +36,7 @@ async fn main() -> std::io::Result<()> {
             .service(add_waiter)
             .service(get_waiter)
             .service(get_all_waiters)
+            .service(delete_waiter)
             .service(add_order)
             .service(get_order)
             .service(get_all_orders)
